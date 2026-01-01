@@ -54,7 +54,7 @@ html, body {
     z-index: 1000;
 }
 
-#tracking_item {
+.tracking_item {
     background: white;
     padding: 5px 10px;
     z-index: 1000;

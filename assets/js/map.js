@@ -548,7 +548,8 @@ function createTrackingNotice(displayText = "[Test Tracking Panel]", bgColor = "
     const newDiv = document.createElement('div');
 
     // Set its text content
-    newDiv.id = "tracking_item";
+    newDiv.id = `tracking_item_${itemId}`;
+    newDiv.className = 'tracking_item';
 
     // Apply background color TODO: check all bg color and change font color if dark
     newDiv.style.backgroundColor = bgColor;
@@ -665,7 +666,7 @@ function paintGeoJson(geoJson, layer, pan = true) {
         style: function (feature) {
             return {
                 color: feature.properties?.color || "#000000", // outline color // eh, lets always gave a black border and override if needed
-                fillColor: feature.properties?.fillColor || "#3388ff", // fill color                   
+                fillColor: feature.properties?.fillColor || "#3388ff", // fill color
                 radius: 4, // colored dot size
                 weight: feature.properties?.weight || 1, // outline width
                 opacity: feature.properties?.opacity || 1,
@@ -836,7 +837,7 @@ function validateGeoJson(untrustedString) {
         }
 
         if (feature.properties?.iconSize) {
-            // Check if icon size is an array 
+            // Check if icon size is an array
             if (!Array.isArray(feature.properties.iconSize)) {
                 feature.properties.iconSize = [32, 32]
             }
