@@ -941,11 +941,11 @@ controlLayer._update = function () {
 groupLayersControl(controlLayer, GROUPS)
 
 
-const liveLayer = L.featureGroup().addTo(map)
+const playerLayers = {}
 const playerStore = new Map()
 const destinationStore = new Map()
 
-function updateMarker(state, followPlayer) {
+function updateMarker(state, followPlayer, layer) {
 
     const playerId = state.entity_id
     const playerlatLng = L.latLng(state.location_z / 1000, state.location_x / 1000)
@@ -963,7 +963,7 @@ function updateMarker(state, followPlayer) {
             weight: 1,
             opacity: 1,
             fillOpacity: 1
-        }).addTo(liveLayer)
+        }).addTo(layer)
         playerMarker.bindPopup("PlayerId: " + playerId)
 
         const playerTrail = new L.Polyline(directionLine, {
@@ -971,7 +971,7 @@ function updateMarker(state, followPlayer) {
             weight: 1,
             opacity: 1,
             smoothFactor: 1
-        }).addTo(liveLayer)
+        }).addTo(layer)
 
         playerStore.set(playerId, playerMarker)
         destinationStore.set(playerId, playerTrail)
@@ -1000,6 +1000,12 @@ function connectWebSocket() {
 
     const followPlayer = ['true', '1'].includes(query.get('followPlayer')?.toString().toLowerCase());
 
+    // Create individual layer groups for each player
+    for (const playerId of validPlayerIds) {
+        playerLayers[playerId] = L.layerGroup();
+        map.addLayer(playerLayers[playerId]);
+    }
+
     // Create subscription channels for all valid player IDs
     const channels = validPlayerIds.map(id => `mobile_entity_state:${id}`);
 
@@ -1014,8 +1020,18 @@ function connectWebSocket() {
     webSocket.onopen = () => {
         console.log("WebSocket connected");
         webSocket.send(JSON.stringify(subscribeMsg));
-        // Optional: show the tracking notice for multiple players
-        createTrackingNotice("Tracking Players: " + validPlayerIds.join(', '), "#00ff00");
+
+        // Create individual tracking notices for each player with toggle callbacks
+        for (const playerId of validPlayerIds) {
+            createTrackingNotice("Tracking Player: " + playerId, "#00ff00", "tracking_container", () => {
+                const layer = playerLayers[playerId];
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                } else {
+                    map.addLayer(layer);
+                }
+            });
+        }
     };
 
     webSocket.onmessage = (event) => {
@@ -1028,7 +1044,8 @@ function connectWebSocket() {
 
             // Check if this message is for one of the subscribed playerIds
             if (validPlayerIds.includes(channelPlayerId)) {
-                updateMarker(msg.data, followPlayer);
+                const layer = playerLayers[channelPlayerId];
+                updateMarker(msg.data, followPlayer, layer);
             }
         }
     };
