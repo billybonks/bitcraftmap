@@ -486,14 +486,7 @@ async function loadGeoJsonFromBackend() {
     }
     trackingList = filterUnique(trackingList); // filter out all the duplicates
     for (const item of trackingList) {
-        createTrackingNotice(item.text, item.color, "tracking_container", () => {
-            const layer = resourceLayers[item.id]
-            if (map.hasLayer(layer)) {
-                map.removeLayer(layer)
-            } else {
-                map.addLayer(layer)
-            }
-        });
+        createTrackingNotice(item.text, item.color, resourceLayers, item.id);
     }
 
     if (fetchPromises.length === 0) return
@@ -540,14 +533,14 @@ function filterUnique(array) {
     return result;
 }
 
-function createTrackingNotice(displayText = "[Test Tracking Panel]", bgColor = "#ffffff", parentDivId = "tracking_container", toggleCallback = null) {
+function createTrackingNotice(displayText = "[Test Tracking Panel]", bgColor = "#ffffff", layerMap = null, itemId = null) {
     // Purspose: Create a small text panel with info about which resources are being tracked
     // Find the parent container by ID
-    const parentDiv = document.getElementById(parentDivId);
+    const parentDiv = document.getElementById("tracking_container");
 
     // If the parent container doesn't exist, optionally create it or throw an error
     if (!parentDiv) {
-        console.error(`Parent div with id "${parentDivId}" not found.`);
+        console.error('Parent div with id "tracking_container" not found.');
         return;
     }
 
@@ -559,12 +552,19 @@ function createTrackingNotice(displayText = "[Test Tracking Panel]", bgColor = "
 
     // Apply background color TODO: check all bg color and change font color if dark
     newDiv.style.backgroundColor = bgColor;
-    if (toggleCallback) {
+    if (layerMap && itemId) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = true;
         checkbox.style.marginRight = '5px';
-        checkbox.addEventListener('change', toggleCallback);
+        checkbox.addEventListener('change', () => {
+            const layer = layerMap[itemId];
+            if (map.hasLayer(layer)) {
+                map.removeLayer(layer);
+            } else {
+                map.addLayer(layer);
+            }
+        });
         newDiv.appendChild(checkbox);
     }
 
@@ -1023,14 +1023,7 @@ function connectWebSocket() {
 
         // Create individual tracking notices for each player with toggle callbacks
         for (const playerId of validPlayerIds) {
-            createTrackingNotice("Tracking Player: " + playerId, "#00ff00", "tracking_container", () => {
-                const layer = playerLayers[playerId];
-                if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
-                } else {
-                    map.addLayer(layer);
-                }
-            });
+            createTrackingNotice("Tracking Player: " + playerId, "#00ff00", playerLayers, playerId);
         }
     };
 
